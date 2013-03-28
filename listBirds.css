@@ -1,0 +1,95 @@
+body {
+	font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	color: #333;
+}
+ol {
+	padding: 0;
+	margin:0;
+}
+.bird-table {
+	width: 30%;
+	list-style: none;
+}
+.bird-table li{
+	margin-bottom: 5px;
+}
+.bird-table:first-child{
+	float:left;
+}
+.bird-table:last-child{
+	float:right;
+}
+.bird {
+	padding: 2px 15px 2px 15px;
+	-moz-border-radius: 15px;
+	-webkit-border-radius: 15px;
+	border-radius: 15px;
+	border: 3px solid #666;
+}
+.new-link-line {
+	/*cursor: pointer;*/
+    display: none;
+    position: absolute; /* allows to position it anywhere */
+    width: 3px; /* your chosen line width */
+    background-color: #06a; /* line color */
+    z-index: 1000; /* make sure this is above your other elements */
+    -webkit-transform-origin: top left;
+    -moz-transform-origin: top left;
+    -o-transform-origin: top left;
+    -ms-transform-origin: top left;
+    transform-origin: top left;
+    /* transform-origin sets rotation around top left (instead of the geometrical center) */
+}
+li.month{
+  text-align: center;
+}
+li.total {
+  text-align: center;
+  font-size: 35px;
+}
+li .info, a.birdimg {
+	background-image: url("info.png");
+	display: inline-block;
+	height: 16px;
+	width: 16px;
+}
+a.birdimg {
+	background-image: url("camicon1.png");
+	height: 12px;
+	margin-left: 2px;
+	cursor: pointer;
+}
+li .info:hover{
+	opacity: .5;
+}
+.legend{
+	position: absolute;
+	left: 50%;
+	margin-left: -50px;
+}
+.legend-holder{
+	float: left;
+}
+.legend .color{
+	width: 30px;
+	height: 30px;
+	margin-bottom: 5px;
+}
+.legend-holder{
+	margin-right: 10px;
+}
+.legend .late{
+	background-color:#f00;
+}
+.legend .same{
+	background-color:#FDD017;
+}
+.legend .early{
+	background-color:#06a;
+}
+.legend .key{
+	text-align: center;
+	font-size: 10px;
+	width: 30px;
+	line-height: 12px;
+}
