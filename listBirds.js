@@ -1,9 +1,28 @@
+var isShowing = function(type){
+	return $("input[type=checkbox]"+type).is(":checked");
+}
 jQuery(document).ready(function($){
+	$(document).on("click", ".legend-holder input[type=checkbox]", function(){
+		var type = "."+$(this).attr('class');
+		var showing = isShowing(type);
+		
+		if(showing){
+			$(".new-link-line"+type).show();
+		}
+		else {
+			$(".new-link-line"+type).hide();	
+		}
+	});	
+	
+	$(document).on("click", ".launcher", function(){
+		$(this).parent('li').find('.fancybox').eq(0).trigger("click");
+	});
+	
 	var i = 1;
 	var calls = $('ol')
 	.map(function(i, element){
 		var key = $(this).data('key');
-		var url_start = "https://spreadsheets.google.com/feeds/cells/";
+		var url_start = "http://spreadsheets.google.com/feeds/cells/";
 		var url_end = "/1/public/values?";
 		var dfo = $.Deferred();
 
@@ -22,10 +41,6 @@ jQuery(document).ready(function($){
 
 		return dfo.promise();
 	});
-	
-	
-	
-	var matches = [];
 	
 	//find matches
 	$.when.apply($,calls)
@@ -46,62 +61,78 @@ jQuery(document).ready(function($){
 		//console.log("DRAWING MATCHES~~~~~~~~~~~~~~~~~~"+x+" "+y);
 		drawMatches();
 	});
-	
-	var drawMatches = function(){
-		$('.new-link-line').remove();	
-		for(match in matches){
-			draw(matches[match][0],matches[match][1], match);
-		}	
-	}
 		
-	var draw = function(left, right, index){
-	  left = $(left).closest("li")
-	  right = $(right).closest("li")
-
-  	  var linkLine = $('<div class="new-link-line"></div>').appendTo('body');
-	  var originX = left.offset().left + left.outerWidth();
-      var originY = left.offset().top + left.outerHeight() / 2;
-      var endX = right.offset().left;
-      var endY = right.offset().top + right.outerHeight() / 2;
-      var length = Math.sqrt((endX - originX) * (endX - originX) 
-          + (endY - originY) * (endY - originY));
-
-      var angle = 180 / 3.1415 * Math.acos(( endY - originY) / length);
-      if(endX > originX){
-          angle *= -1;
-	  }
-	
-  	  linkLine
-      .css('top', originY)
-      .css('left', originX)
-      .css('height', length)
-      .css('-webkit-transform', 'rotate(' + angle + 'deg)')
-      .css('-moz-transform', 'rotate(' + angle + 'deg)')
-      .css('-o-transform', 'rotate(' + angle + 'deg)')
-      .css('-ms-transform', 'rotate(' + angle + 'deg)')
-      .css('transform', 'rotate(' + angle + 'deg)');
-		if(left.data("doy") > right.data("doy")){
-			linkLine.css('background-color','#f00')
-		}
-		else if(left.data("doy") == right.data("doy")){
-			linkLine.css('background-color','#FDD017')
-		}
-		linkLine.fadeIn("slow")
-		
-		left.attr('data-index',index);
-		right.attr('data-index',index);
-		linkLine.attr('data-index',index);
-	}
-	
 	$(window).resize(drawMatches);
 });
+	
+var matches = [];	
+var types = ['.early','.same','.late'];
 
+var drawMatches = function(){
+	$('.new-link-line').remove();	
+	for(match in matches){
+		draw(matches[match][0],matches[match][1], match);
+	}
+	for(type in types){
+		if(isShowing(types[type])){
+			$(".new-link-line"+types[type]).show();
+		}
+		else {
+			console.log(types[type]+" is not showing.");
+		}
+		//linkLine.fadeIn("slow");
+	}	
+}
+var draw = function(left, right, index){
+	left = $(left).closest("li")
+	right = $(right).closest("li")
+
+	var linkLine = $('<div class="new-link-line"></div>').appendTo('body');
+	var originX = left.offset().left + left.outerWidth();
+	var originY = left.offset().top + left.outerHeight() / 2;
+	var endX = right.offset().left;
+	var endY = right.offset().top + right.outerHeight() / 2;
+	var length = Math.sqrt((endX - originX) * (endX - originX) 
+	    + (endY - originY) * (endY - originY));
+
+	var angle = 180 / 3.1415 * Math.acos(( endY - originY) / length);
+	if(endX > originX){
+		angle *= -1;
+	}
+
+	linkLine
+	.css('top', originY)
+	.css('left', originX)
+	.css('height', length)
+	.css('-webkit-transform', 'rotate(' + angle + 'deg)')
+	.css('-moz-transform', 'rotate(' + angle + 'deg)')
+	.css('-o-transform', 'rotate(' + angle + 'deg)')
+	.css('-ms-transform', 'rotate(' + angle + 'deg)')
+	.css('transform', 'rotate(' + angle + 'deg)');
+	if(left.data("doy") > right.data("doy")){
+		linkLine.css('background-color','#f00')
+		linkLine.addClass('late');
+	}
+	else if(left.data("doy") == right.data("doy")){
+		linkLine.css('background-color','#FDD017')
+		linkLine.addClass('same');
+	}
+	else {
+		linkLine.addClass('early');
+	}
+
+	left.attr('data-index',index);
+	right.attr('data-index',index);
+	linkLine.attr('data-index',index);
+}
+	
 Date.prototype.getDOY = function() {
   var onejan = new Date(this.getFullYear(),0,1);
   return Math.ceil((this - onejan) / 86400000);
 }
 
 var listBirds3 = function(root, key, iterative) {	
+   var promises = [];
    var feed = root.feed;
    var entries = feed.entry || [];
    var html = (iterative?["<li class='total'></li>"]:null);
@@ -143,8 +174,9 @@ var listBirds3 = function(root, key, iterative) {
 			} 
 	  	}
 	
-		totalBirds += 1;	
-		updateBirdList({key: key,
+		totalBirds += 1;
+		promises.push(	
+			updateBirdList({key: key,
 						doy: dayOfYear,
 						bird: content,
 						month: curr_month,
@@ -153,20 +185,27 @@ var listBirds3 = function(root, key, iterative) {
 						total: totalBirds},
 						drawMonth,
 						html
-						);
+						)
+		);
 	 	drawMonth = false;
 		}
 	}	
+	$.when.apply( $, promises ).done(function(){
+		console.log('redrawing matches')
+	    drawMatches();
+	});
 }
 
+var m_names = [ "January", "February", "March", 
+			   "April", "May", "June", "July", "August", "September", 
+			   "October", "November", "December"];   
+var m_colors = [ "Aqua", "HotPink", "LimeGreen", 
+			   "Magenta", "Plum", "Orange", "Crimson", "BurlyWood", "Gainsboro", 
+			   "Tomato", "SandyBrown", "SkyBlue"];
+			
 var updateBirdList = function (details, drawMonth, html){
-	var useHtml = (html != undefined && html != null)
-    var m_names = [ "January", "February", "March", 
-				   "April", "May", "June", "July", "August", "September", 
-				   "October", "November", "December"];   
-    var m_colors = [ "Aqua", "HotPink", "LimeGreen", 
-				   "Magenta", "Plum", "Orange", "Crimson", "BurlyWood", "Gainsboro", 
-				   "Tomato", "SandyBrown", "SkyBlue"];	
+	var $promise = $.Deferred();
+	var useHtml = (html != undefined && html != null);
 	var str = '';
 	
 	if(drawMonth){
@@ -198,52 +237,58 @@ var updateBirdList = function (details, drawMonth, html){
 		var $that = $(this);
 		var tag = details.bird.replace(/\'|\s|\(.*\)/g,"");
 		$.ajax({
-			url: 'http://api.flickr.com/services/rest/',
+			url: 'https://api.flickr.com/services/rest/',
 			data: 'format=json&user_id=35323958%40N00&sort=random&method=flickr.photos.search&tags='+tag+'&api_key=3e9a8ddc137ebf38ae34a4cad4715941&nojsoncallback=1',
 			dataType: 'json'
 		})
 		.done(function(data){
 			//console.log(details.bird+" pics fetched.");
-			$that.after(makeBirdImg(data,tag , true));			
-		})
+			jQuery(makeBirdImg(data, tag))
+			.insertAfter($that)
+			.end()
+			.find(".fancybox")
+			.fancybox({live: false});
+			$promise.resolve();
+		});
 	});
+	return $promise.promise();
 }
 
-var makeBirdImg = function(rsp, tag, isRandom) {
+var makeBirdImg = function(rsp, tag) {
 	if (!rsp || rsp.stat != "ok"){
 	 return;
 	}
 	var s = "";
 	if(rsp.photos && rsp.photos.total && rsp.photos.total > 0){
 		 var total = rsp.photos.total;
-
+		 
 		 for(var i = 0; i < total; i++){
 		 	var photo = rsp.photos.photo[ i ];
 		    var id = tag+i;
-		    s += wrapImg(makeImg(photo,id), id);
+		    s += makeImg(photo, id, tag);
 		 }
 	 }
 
-	 return s;
+	 return s?makeGallery(tag, s):"";
 }
 
-var makeImg = function (photo, id){
-	 var t_url = "http://farm" + photo.farm +
+var makeImg = function (photo, id, tag){
+	 var t_url = "https://farm" + photo.farm +
 	 ".static.flickr.com/" + photo.server + "/" +
-	 photo.id + "_" + photo.secret + "_" + "m.jpg";
+	 photo.id + "_" + photo.secret + ".jpg";
 
-	 var p_url = "http://www.flickr.com/photos/" +
+	 var p_url = "https://www.flickr.com/photos/" +
 	 photo.owner + "/" + photo.id;
 	
 	 if(!id){
 		id="";
 	 }
 
-	 return  '<span id="'+id+'" style="display:none;"><img alt="'+ escape(photo.title) + '"src="' + t_url + '"/></span>';	
+	 return  '<a rel="'+tag+'" class="fancybox image" alt="'+ escape(photo.title) + '"href="' + t_url + '"/>';	
 }
 
-var wrapImg = function(img, id){
-	return '<a class="thickbox birdimg" href="#TB_inline?height=300&width=300&inlineId='+id+'"></a>'+img;
+var makeGallery = function(tag, images){
+	return '<a class="launcher birdimg" rel="'+tag+'" href="javascript:;"></a><span style="display:none;">'+images+'</span>';
 }
 
 var updateBirdTotal = function (key, total){
